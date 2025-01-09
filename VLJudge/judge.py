@@ -76,11 +76,19 @@ def run_code(language, code_path, input_data, time_limit, memory_limit):
         return f"Runtime Error: {str(e)}", False, 0, max_mem_used, ""
 
     if p.returncode != 0:
-        err_info = error_output if error_output else "Unknown error"
+        err_info = error_output if error_output else "Compiler Error"
         return f"Runtime Error: {err_info}", False, execution_time_ms, max_mem_used, user_output
 
     user_output_lower = user_output.lower()
     return user_output, user_output_lower, True, execution_time_ms, max_mem_used
+
+def get_different_line(expected_output, user_output):
+    expected_lines = expected_output.split('\n')
+    user_lines = user_output.split('\n')
+    for idx, (exp_line, user_line) in enumerate(zip(expected_lines, user_lines)):
+        if exp_line != user_line:
+            return idx + 1, exp_line, user_line
+    return -1, "", ""  # Nếu không tìm thấy dòng khác nhau
 
 def main():
     if len(sys.argv) < 6:
@@ -138,7 +146,8 @@ def main():
             if user_output_lower.strip() == str(expected_output).strip().lower():
                 results.append(f"Testcase {i + 1}: Passed - Time: {exec_time_ms:.2f}ms, Memory: {mem_used_kb:.2f}KB")
             else:
-                results.append(f"Testcase {i + 1}: Failed - Wrong Answer: Expected {expected_output}, Got {user_output}")
+                line_number, expected_line, user_line = get_different_line(expected_output, user_output)
+                results.append(f"Testcase {i + 1}: Failed - Wrong Answer at line {line_number}: Expected '{expected_line}', Got '{user_line}'")
                 final_status = "Wrong Answer"
 
     print(f"Final status: {final_status}")

@@ -138,6 +138,55 @@
         .problem a:hover {
             text-decoration: underline;
         }
+        .pagination {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .pagination a {
+            color: #333;
+            padding: 8px 16px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            margin: 0 4px;
+            border-radius: 5px;
+        }
+        .pagination a:hover {
+            background-color: #ddd;
+        }
+        .pagination .current {
+            padding: 8px 16px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+        }
+        .pagination input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            margin: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background-color: #555;
+        }
+        .pagination button:active {
+            background-color: #222;
+        }
+        .go_to_page {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -215,7 +264,30 @@
                 </div>
             {% endfor %}
         </div>
-
+        <div class="pagination">
+            <span class="step-links">
+                {% if problems.has_previous %}
+                    <a href="?page=1">&laquo; First</a>
+                    <a id = "left-arrow" href="?page={{ problems.previous_page_number }}">Previous</a>    
+                {% endif %}
+    
+                <span class="current">
+                    Page {{ problems.number }} of {{ problems.paginator.num_pages }}.
+                </span>
+    
+                {% if problems.has_next %}
+                    <a href="?page={{ problems.next_page_number }}">Next</a>
+                    <a href="?page={{ problems.paginator.num_pages }}">Last &raquo;</a>
+                {% endif %}
+            </span> 
+            <div class="go_to_page">
+                <label for="page-number">Go to page:</label>
+                <input type="number" id="page-number" min="1" max="{{ problems.paginator.num_pages }}">
+                <button onclick="goToPage()">Go</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         function sortProblems(criteria) {
             const problemList = document.getElementById('problem-list');
@@ -249,6 +321,15 @@
     
             problemList.innerHTML = '';
             problems.forEach(problem => problemList.appendChild(problem));
+        }
+        function goToPage() {
+            const pageNumber = document.getElementById('page-number').value;
+            const maxPage = {{ submissions.paginator.num_pages }};
+            if (pageNumber >= 1 && pageNumber <= maxPage) {
+                window.location.href = `?page=${pageNumber}`;
+            } else {
+                alert(`Please enter a page number between 1 and ${maxPage}`);
+            }
         }
         function applyFilters() {
             const tag = document.getElementById('tags').value;

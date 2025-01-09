@@ -25,7 +25,7 @@ from .forms import UserSearchForm
 from .models import FriendRequest
 from .models import RatingChange
 from django.utils import timezone
-
+from django.core.paginator import Paginator
 
 @login_required
 def search_user(request):
@@ -36,12 +36,13 @@ def search_user(request):
             try:
                 user = User.objects.get(username=username)
                 profile, created = Profile.objects.get_or_create(user=user)
-                 
+                
                 if not profile.avatar:
                     profile.avatar_url = settings.MEDIA_URL + 'default.jpg'
                 else:
                     profile.avatar_url = profile.avatar.url
                 # Truyền form đúng vào context
+                total_solve = len(user.accepted_problems)
                 submissions = Submission.objects.filter(user=user).order_by('submitted_at')
                 chart_data = {
                     'labels': [submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S') for submission in submissions],
@@ -50,7 +51,7 @@ def search_user(request):
                 context = {
                     'searched_user': user,
                     'profile': profile,
- 
+                    'total_solve': total_solve,
                     'chart_data': chart_data,
                 }
                 
@@ -166,12 +167,29 @@ def register_view(request):
     else:
         form = RegisterForm()
     return render(request, 'register.html', {'form': form})
+
+def get_different_line(expected_output, user_output):
+    expected_lines = expected_output.split('\n')
+    user_lines = user_output.split('\n')
+    for idx, (exp_line, user_line) in enumerate(zip(expected_lines, user_lines)):
+        if exp_line != user_line:
+            return idx + 1, exp_line, user_line
+    return -1, "", ""  # Nếu không tìm thấy dòng khác nhau
+
 @login_required
 def user_submissions(request):
-    submissions = Submission.objects.filter(user=request.user).order_by('-submitted_at')
+    submissions_list = Submission.objects.filter(user=request.user).order_by('-submitted_at')
+    paginator = Paginator(submissions_list, 25)  # 25 submissions per page
+
+    page_number = request.GET.get('page')
+    submissions = paginator.get_page(page_number)
     return render(request, 'submissions.html', {'submissions': submissions})
 def all_submissions(request):
-    submissions = Submission.objects.all().order_by('-submitted_at')
+    submissions_list = Submission.objects.all().order_by('-submitted_at')
+    paginator = Paginator(submissions_list, 25)  # 25 submissions per page
+
+    page_number = request.GET.get('page')
+    submissions = paginator.get_page(page_number)
     return render(request, 'all_submissions.html', {'submissions': submissions})
 @login_required
 def submission_detail(request, submission_id):
@@ -183,7 +201,7 @@ def submission_detail(request, submission_id):
     hidden_testcases = load_hidden_testcases(problem_id)
      
     testcase_result_pattern = re.compile(
-    r'Testcase (\d+): (Passed|Failed)(?: - ([^\n]+))?',re.DOTALL)
+        r'Testcase (\d+): (Passed|Failed)(?: - ([^\n]+))?', re.DOTALL)
     testcase_output_pattern = re.compile(
         r'Testcase (\d+):\s*(.*?)(?=(?:Testcase \d+:|$))', re.DOTALL)
  
@@ -192,15 +210,13 @@ def submission_detail(request, submission_id):
         'details': m.group(3) if m.group(3) else ''
     } for m in testcase_result_pattern.finditer(submission.result)}
  
-
     outputs = {int(m.group(1)): m.group(2).strip() for m in testcase_output_pattern.finditer(submission.outputs)}
  
     for i, (input_data, expected_output) in enumerate(hidden_testcases, start=1):
-        result = results.get(i) 
-        actual_output = outputs.get(i, '')  
-         
+        result = results.get(i)
+        actual_output = outputs.get(i, '')
 
-        if result:  
+        if result:
             if result['status'] == "Passed":
                 testcases.append({
                     'status': 'Passed',
@@ -209,20 +225,16 @@ def submission_detail(request, submission_id):
                     'actual': actual_output,
                     'comment': 'Ok, passed'
                 })
-            else: 
-                details_pattern = re.compile(r'Wrong Answer: Expected (.+), Got (.+)', re.DOTALL)
-                details_match = details_pattern.search(result['details'])
-                if details_match:
-                    expected_output = details_match.group(1).strip()
-                    actual_output = details_match.group(2).strip()
+            else:
+                line_number, expected_line, user_line = get_different_line(expected_output, actual_output)
                 testcases.append({
                     'status': 'Failed',
                     'input': input_data,
                     'expected': expected_output,
                     'actual': actual_output,
-                    'comment': f'Wrong Answer: Expected: {expected_output}\nGot: {actual_output}'
+                    'comment': f'Wrong Answer at line {line_number}: Expected: {expected_line}\nGot: {user_line}'
                 })
-        else: 
+        else:
             testcases.append({
                 'status': 'Missing',
                 'input': input_data,
@@ -241,11 +253,11 @@ def submission_detail(request, submission_id):
         'submitted_at': submission.submitted_at,
         'testcases': testcases
     })
-
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import Problem, Submission
 from django.db.models import Q
+
 
 def get_problemsets(request):
     problems = Problem.objects.all()
@@ -260,6 +272,12 @@ def get_problemsets(request):
     if rating_max:
         problems = problems.filter(rating__lte=rating_max)
 
+    # Pagination
+    paginator = Paginator(problems, 25)  # 25 bài toán mỗi trang
+    page_number = request.GET.get('page')
+    problems_page = paginator.get_page(page_number)
+
+    # Lấy tất cả các tags
     tags = Problem.objects.values_list('tags', flat=True).distinct()
 
     problem_status = {}
@@ -267,8 +285,7 @@ def get_problemsets(request):
         # Lấy thông tin về trạng thái của các bài toán mà người dùng đã giải
         accepted_problems = [int(id) for id in request.user.accepted_problems]
         tried_problems = [int(id) for id in request.user.tried_problems]
-        print(accepted_problems, tried_problems)
-        for problem in problems:
+        for problem in problems_page:
             if problem.id in accepted_problems:
                 problem_status[problem.id] = 'solved'
             elif problem.id in tried_problems:
@@ -276,10 +293,14 @@ def get_problemsets(request):
             else:
                 problem_status[problem.id] = 'not_tried'
     else:
-        for problem in problems:
+        for problem in problems_page:
             problem_status[problem.id] = 'not_tried'
 
-    return render(request, 'problemsets.html', {'problems': problems, 'tags': tags, 'problem_status': problem_status})
+    return render(request, 'problemsets.html', {
+        'problems': problems_page,
+        'tags': tags,
+        'problem_status': problem_status
+    })
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
