@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problemsets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7fa;
+            color: #333;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: #2c3e50;
+            color: #ffffff;
+        }
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .navbar .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .navbar .nav-links a {
+            text-decoration: none;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .navbar .nav-links a:hover {
+            background: #3498db;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #2c3e50;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            border-radius: 5px;
+        }
+        .dropdown-content a {
+            color: #ffffff;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {
+            background-color: #3498db;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .filter-container select, .filter-container input {
+            padding: 8px 12px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            background-color: #f7f7f7;
+        }
+        .filter-container button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .filter-container button:hover {
+            background-color: #2980b9;
+        }
+        .problem-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #f7f7f7;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .problem-header div {
+            flex: 1;
+            text-align: center;
+        }
+        .problem {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .problem.solved {
+            background-color: #d4edda; /* Màu xanh cho bài đã giải */
+        }
+        .problem.tried {
+            background-color: #f8d7da; /* Màu đỏ cho bài đã thử nhưng chưa Accepted */
+        }
+        .problem.not_tried {
+            background-color: #ffffff; /* Không màu cho bài chưa thử */
+        }
+        .problem div {
+            flex: 1;
+            text-align: center;
+        }
+        .problem a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .problem a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <a href="/" style="color: #ffffff; text-decoration: none;">VL Judge</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/problemsets">Problemsets</a>
+            <a href="/contests">Contests</a>
+            <a href="/all_submissions">Status</a>
+            <a href="#">Ranks</a>
+        </div>
+        <div class="nav-links">
+            {% if request.user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="javascript:void(0)">Welcome, {{ request.user.username }}</a>
+                    <div class="dropdown-content">
+                        <a href="/profile">Profile</a>
+                        <a href="/submissions">Submissions</a>
+                        <a href="/logout">Log Out</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="/register">Register</a>
+                <a href="/login">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="container">
+        <h1>Problemsets</h1>
+
+        <div class="filter-container">
+            <div>
+                <label for="tags">Filter by Tags:</label>
+                <select id="tags">
+                    <option value="">Select a tag</option>
+                    {% for tag in tags %}
+                        <option value="{{ tag }}" {% if tag == request.GET.tag %}selected{% endif %}>{{ tag }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="rating">Filter by Rating:</label>
+                <input type="number" id="rating-min" placeholder="Min Rating" min="0" value="{{ request.GET.rating_min }}" />
+                <input type="number" id="rating-max" placeholder="Max Rating" min="0" value="{{ request.GET.rating_max }}" />
+            </div>
+            <div>
+                <button onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+
+        <div class="problem-header">
+            <div>#</div>
+            <div>Title</div>
+            <div>Tags</div>
+            <div>
+                <a href="javascript:void(0)" onclick="sortProblems('rating')" data-sort="none">Rating</a>
+            </div>
+            <div>
+                <a href="javascript:void(0)" onclick="sortProblems('solved')" data-sort="none">Solved</a>
+            </div>
+        </div>
+        {% load custom_filters %}
+        
+        <div id="problem-list">
+            {% for problem in problems %}
+                <div class="problem {{ problem_status|default:'not_tried'|dict_get:problem.id }}" data-rating="{{ problem.rating }}" data-solved="{{ problem.solved_count }}">
+                    <div><a href="{% url 'problem_detail' problem.id %}">{{ problem.id }}</a></div>
+                    <div><a href="{% url 'problem_detail' problem.id %}">{{ problem.title }}</a></div>
+                    <div>{{ problem.tags }}</div>
+                    <div>{{ problem.rating }}</div>
+                    <div>{{ problem.solved_count }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+    <script>
+        function sortProblems(criteria) {
+            const problemList = document.getElementById('problem-list');
+            const problems = Array.from(problemList.getElementsByClassName('problem'));
+            const header = document.querySelector(`.problem-header a[onclick="sortProblems('${criteria}')"]`);
+            const currentSort = header.getAttribute('data-sort');
+    
+            let newSort;
+            if (currentSort === 'none' || currentSort === 'asc') {
+                newSort = 'desc';
+            } else if (currentSort === 'desc') {
+                newSort = 'asc';
+            } else {
+                newSort = 'none';
+            }
+    
+            header.setAttribute('data-sort', newSort);
+    
+            problems.sort((a, b) => {
+                const aValue = parseInt(a.getAttribute(`data-${criteria}`));
+                const bValue = parseInt(b.getAttribute(`data-${criteria}`));
+    
+                if (newSort === 'asc') {
+                    return aValue - bValue;
+                } else if (newSort === 'desc') {
+                    return bValue - aValue;
+                } else {
+                    return 0;
+                }
+            });
+    
+            problemList.innerHTML = '';
+            problems.forEach(problem => problemList.appendChild(problem));
+        }
+        function applyFilters() {
+            const tag = document.getElementById('tags').value;
+            const ratingMin = document.getElementById('rating-min').value;
+            const ratingMax = document.getElementById('rating-max').value;
+
+            let url = '/problemsets?';
+
+            if (tag) url += `tag=${tag}&`;
+            if (ratingMin) url += `rating_min=${ratingMin}&`;
+            if (ratingMax) url += `rating_max=${ratingMax}&`;
+
+            window.location.href = url;
+        }
+    </script>
+</body>
+</html>

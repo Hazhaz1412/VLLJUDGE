@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ problem.title }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: #004d6f;
+            color: #ffffff;
+        }
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .navbar .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .navbar .nav-links a {
+            text-decoration: none;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .navbar .nav-links a:hover {
+            background: #0056b3;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #004d6f;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+            border-radius: 5px;
+        }
+        .dropdown-content a {
+            color: #ffffff;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {
+            background-color: #0056b3;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .container {
+            padding: 20px;
+        }
+        .problem {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .problem h3 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+        .problem p {
+            margin: 20px 0;
+        }
+        .testcases {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .testcase {
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .testcase div {
+            width: 48%;
+        }
+        .testcase .divider {
+            width: 4%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #004d6f;
+        }
+        .testcase pre {
+            background: #e8e8e8;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .code-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .code-form textarea { 
+            height: 0;
+            opacity: 0;
+            position: absolute;
+            z-index: -1;
+        }
+        
+        .code-form select, .code-form button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .code-form button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .code-form button:hover {
+            background-color: #0056b3;
+        }
+        .sidebar {
+            position: fixed;
+            top: 80px;
+            right: -220px; /* Ẩn sidebar ban đầu */
+            width: 200px;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s;
+        }
+        .sidebar.open {
+            right: 0; /* Hiển thị sidebar khi mở */
+        }
+        .sidebar h4 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .sidebar p {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        pre {
+            font-family: 'Arial, sans-serif', monospace; /* Font chữ dạng monospace cho phần input */
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap; /* Dòng sẽ tự động xuống dòng khi quá dài */
+            word-wrap: break-word;
+            font-size: 15px;
+            color: #333;
+        }
+        .toggle-sidebar-btn {
+            position: absolute;
+            top: 10px;
+            left: -40px;
+            background-color: #004d6f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .problem-image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .problem-image {
+            max-width: 35%;
+            height: 35%;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <a href="/" style="color: #ffffff; text-decoration: none;">VL Judge</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/problemsets">Problemsets</a>
+            <a href="/contests">Contests</a>
+            <a href="/all_submissions">Status</a>
+            <a href="#">Ranks</a>
+        </div>
+        <div class="nav-links">
+            {% if request.user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="javascript:void(0)">Welcome, {{ request.user.username }}</a>
+                    <div class="dropdown-content">
+                        <a href="/profile">Profile</a>
+                        <a href="/submissions">Submissions</a>
+                        <a href="/logout">Log Out</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="/register">Register</a>
+                <a href="/login">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="container">
+        <div class="problem">
+            <h3>{{ problem.title }}</h3> 
+            <p>{{ problem.statement }}</p>
+            {% if problem.image %}
+                <div class="problem-image-container">
+                    <img src="{{ problem.image.url }}" alt="{{ problem.title }}" class="problem-image">
+                </div>
+            {% endif %}
+            <p><strong>Input:</strong></p>
+            <pre>{{ problem.input }}</pre>
+            <p><strong>Output:</strong></p>
+            <pre>{{ problem.output }}</pre>
+            <hr>
+            <p><strong>Sample Testcases:</strong></p>
+            <div class="testcases">
+                {% for testcase in sample_testcases %}
+                    <div class="testcase">
+                        <div>
+                            <h4>Input</h4>
+                            <pre>{{ testcase.input }}</pre>
+                        </div>
+                        <div class="divider">|</div>
+                        <div>
+                            <h4>Output</h4>
+                            <pre>{{ testcase.output }}</pre>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="code-form">
+            {% if request.user.is_authenticated %}
+                <form id="codeForm" action="/submit_code/" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="problem_id" value="{{ problem.id }}">
+                    <label for="language">Choose Language:</label>
+                    <select name="language" id="language" onchange="updateEditorMode()">
+                        <option value="cpp">C++</option>
+                        <option value="python">Python</option>
+                    </select>
+                    <label for="code">Your Code:</label>
+                    <textarea name="code" id="code" style="visibility: hidden; height: 0;"></textarea>
+                    <button type="submit">Submit</button>
+                </form>
+            {% else %}
+                <p>You need to <a href="{% url 'login' %}?next={{ request.path }}">login</a> to submit your code.</p>
+            {% endif %}
+        </div>
+    </div>
+     <div class="sidebar" id="sidebar">
+        <button class="toggle-sidebar-btn" onclick="toggleSidebar()">←</button>
+        <h4>Problem Details</h4>
+        <p><strong>Tags:</strong> {{ problem.tags }}</p>
+        <p><strong>Rating:</strong> {{ problem.rating }}</p>
+        <p><strong>Time Limit:</strong> {{ problem.time_limit }} seconds</p>
+        <p><strong>Memory Limit:</strong> {{ problem.memory_limit }} MB</p>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script>
+        var editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+            lineNumbers: true,
+            mode: 'text/x-c++src',
+            theme: 'dracula'
+        });
+
+        function updateEditorMode() {
+            var language = document.getElementById('language').value;
+            var mode = language === 'python' ? 'python' : 'text/x-c++src';
+            editor.setOption('mode', mode);
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+        document.getElementById('codeForm').addEventListener('submit', function() {
+            document.getElementById('code').value = editor.getValue();
+        });
+    </script>
+</body>
+</html>

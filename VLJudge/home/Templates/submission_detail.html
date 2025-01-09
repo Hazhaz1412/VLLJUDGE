@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submission Detail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background-color: #004d6f;
+            color: #ffffff;
+        }
+        .navbar .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .navbar .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .navbar .nav-links a {
+            text-decoration: none;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .navbar .nav-links a:hover {
+            background: #0056b3;
+        }
+        .container {
+            padding: 20px;
+        }
+        pre {
+            background: #e8e8e8;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .testcase {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .testcase h4 {
+            margin: 0;
+        }
+        .testcase pre {
+            background: #e8e8e8;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <a href="/" style="color: #ffffff; text-decoration: none;">VL Judge</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/problemsets">Problemsets</a>
+            <a href="/contests">Contests</a>
+            <a href="/all_submissions">Status</a>
+            <a href="#">Ranks</a>
+        </div>
+        <div class="nav-links">
+            {% if request.user.is_authenticated %}
+                <div class="dropdown">
+                    <a href="javascript:void(0)">Welcome, {{ request.user.username }}</a>
+                    <div class="dropdown-content">
+                        <a href="/profile">Profile</a>
+                        <a href="/submissions">Submissions</a>
+                        <a href="/logout">Log Out</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="/register">Register</a>
+                <a href="/login">Login</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="container">
+        <h1>Submission Detail</h1>
+        <p><strong>Problem:</strong> {{ submission.problem_title }}</p>
+        <p><strong>Language:</strong> {{ submission.language }}</p>
+        <p><strong>Status:</strong> {{ submission.status }}</p>
+        <p><strong>Time Used:</strong> {{ submission.time_limit }} s</p>
+        <p><strong>Memory Used:</strong> {{ submission.memory_used }} KB</p>
+        <p><strong>Submitted At:</strong> {{ submission.submitted_at }}</p>
+        <h2>Source Code</h2>
+        <pre>{{ submission.source_code }}</pre>
+        {% if submission.status != "Accepted" %}
+            <h2>Failed Testcases</h2>
+            {% for testcase in testcases %}
+                <div class="testcase">
+                    <h4>Expected Output:</h4>
+                    <pre>{{ testcase.expected }}</pre>
+                    <h4>Actual Output:</h4>
+                    <pre>{{ testcase.actual }}</pre>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>
