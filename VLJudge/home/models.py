@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 import os 
 
 # Create your models here.
+
+def hidden_testcases_upload_path(instance, filename):
+    return f'hidden_testcases/hidden_testcases_{instance.id}.txt'
 class Problem(models.Model):
     title = models.CharField(max_length=200)
     statement = models.TextField()
@@ -10,46 +13,23 @@ class Problem(models.Model):
     rating = models.IntegerField()
     input = models.TextField()
     output = models.TextField()
-    image = models.ImageField(upload_to='problem_images/', null=True, blank=True)
+    image = models.ImageField(upload_to='problem_images/', null=True, blank=True, verbose_name="Image", help_text="Optional image for the problem")
     sample_testcases = models.TextField()
-    hidden_testcases = models.FileField(upload_to='hidden_testcases/', blank=True, null=True)
+    hidden_testcases = models.FileField(upload_to=hidden_testcases_upload_path, blank=True, null=True, verbose_name="Hidden Testcases", help_text="Hidden test cases file")
+
     time_limit = models.FloatField(default=1)   
     memory_limit = models.IntegerField(default=256)
-    solved_count = models.IntegerField(default=0)                                   
+    solved_count = models.IntegerField(default=0)       
     def __str__(self):
-        return self.title 
-
+        return self.title      
     def save(self, *args, **kwargs):
-        # Lấy đối tượng từ cơ sở dữ liệu nếu tồn tại
-        try:
+        # Xóa tệp cũ nếu có
+        if self.pk:
             old_instance = Problem.objects.get(pk=self.pk)
-        except Problem.DoesNotExist:
-            old_instance = None
-
-        # Nếu không có tệp hidden_testcases mới và đối tượng cũ tồn tại
-        if not self.hidden_testcases and old_instance and old_instance.hidden_testcases:
-            self.hidden_testcases = old_instance.hidden_testcases
-
-        super().save(*args, **kwargs)
-
-        if self.hidden_testcases:
-            new_name = f'hidden_testcases_{self.id}.txt'
-            new_path = os.path.join('hidden_testcases', new_name)
-            old_path = self.hidden_testcases.path
-
-            # Đảm bảo thư mục hidden_testcases tồn tại
-            os.makedirs(os.path.dirname(new_path), exist_ok=True)
-
-            if old_path != new_path:
-                if os.path.exists(new_path):
-                    os.remove(new_path)  # Xóa tệp đích nếu nó đã tồn tại
-                if os.path.exists(old_path):
-                    os.rename(old_path, new_path)
-                    self.hidden_testcases.name = new_path
-                    super().save(*args, **kwargs)  # Lưu lại đối tượng để cập nhật đường dẫn tệp
-    def _get_hidden_testcases_name(self):
-        return f'hidden_testcases/hidden_testcases_{self.id}.txt'
- 
+            if old_instance.hidden_testcases and old_instance.hidden_testcases != self.hidden_testcases:
+                old_instance.hidden_testcases.delete(save=False)
+        super().save(*args, **kwargs)                                
+  
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)

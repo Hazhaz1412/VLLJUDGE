@@ -82,6 +82,8 @@
         }
         .problem p {
             margin: 20px 0;
+            letter-spacing: 1px; /* Thêm khoảng cách giữa các chữ */
+
         }
         .testcases {
             display: flex;
@@ -261,7 +263,7 @@
                     <input type="hidden" name="problem_id" value="{{ problem.id }}">
                     <label for="language">Choose Language:</label>
                     <select name="language" id="language" onchange="updateEditorMode()">
-                        <option value="cpp">C++</option>
+                        <option value="cpp">C++/C</option>
                         <option value="python">Python</option>
                     </select>
                     <label for="code">Your Code:</label>

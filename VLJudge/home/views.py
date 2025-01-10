@@ -26,6 +26,103 @@ from .models import FriendRequest
 from .models import RatingChange
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.template.loader import render_to_string
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils import timezone
+from django.utils.timezone import timedelta
+from django.contrib.auth.tokens import default_token_generator
+from django.urls import reverse
+from .forms import RegisterForm, LoginForm
+from django.core.mail import send_mail
+from django.utils.html import strip_tags
+from django.template.loader import render_to_string 
+def login_view(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                if user.is_active:
+                    # Đăng nhập thành công nếu tài khoản đã được xác thực
+                    login(request, user)
+                    return redirect('/')
+                else:
+                    if form.cleaned_data.get('resend_activation_email'):
+                        # Nếu người dùng yêu cầu gửi lại email xác thực
+                        send_activation_email(user, request)
+                        form.add_error(None, 'Your account is not active. A new activation email has been sent to you.')
+                    else:
+                        form.add_error(None, 'Your account is not active. Please check your email for the activation link.')
+            else:
+                form.add_error(None, 'Invalid username or password')
+    else:
+        form = LoginForm()
+
+    return render(request, 'login.html', {'form': form})
+
+
+def send_activation_email(user, request):
+    current_site = get_current_site(request)
+    mail_subject = 'Activate your account'
+    
+    # Tải nội dung HTML từ template
+    html_message = render_to_string('activation_email.html', {
+        'user': user,
+        'domain': current_site.domain,
+        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+        'token': default_token_generator.make_token(user),
+    })
+    
+    # Loại bỏ thẻ HTML để làm nội dung văn bản thuần (tùy chọn)
+    plain_message = strip_tags(html_message)
+    
+    # Gửi email
+    send_mail(
+        subject=mail_subject,
+        message=plain_message,  # Nội dung thuần văn bản
+        from_email='noreply@vljudge.com',
+        recipient_list=[user.email],
+        html_message=html_message,  # Nội dung HTML
+    )
+
+def activate(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        return redirect('login')
+    else:
+        return render(request, 'activation_invalid.html')
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            send_activation_email(user, request)
+            return render(request, 'registration_pending.html')
+    else:
+        form = RegisterForm()
+    return render(request, 'register.html', {'form': form})
+
+
 
 @login_required
 def search_user(request):
@@ -153,20 +250,7 @@ def add_friend(request, user_id):
 def get_home(request):
     return render(request, 'home.html')
 
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')  # Sử dụng tên URL 'home'
-
-    if request.method == 'POST':
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.set_password(form.cleaned_data['password'])
-            user.save()
-            return redirect('login')
-    else:
-        form = RegisterForm()
-    return render(request, 'register.html', {'form': form})
+ 
 
 def get_different_line(expected_output, user_output):
     expected_lines = expected_output.split('\n')
@@ -301,21 +385,7 @@ def get_problemsets(request):
         'tags': tags,
         'problem_status': problem_status
     })
-def login_view(request):
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect('/')
-            else:
-                form.add_error(None, 'Invalid username or password')
-    else:
-        form = LoginForm()
-    return render(request, 'login.html', {'form': form})
+ 
 
 def logout_view(request):
     logout(request)
@@ -360,7 +430,7 @@ def load_hidden_testcases(problem_id):
     """
     Load multiple hidden test cases from a file based on the problem ID.
     """
-    file_path = os.path.join(settings.BASE_DIR, 'hidden_testcases', f'hidden_testcases_{problem_id}.txt')
+    file_path = os.path.join(settings.MEDIA_ROOT, 'hidden_testcases', f'hidden_testcases_{problem_id}.txt')
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Hidden test case file for problem ID {problem_id} not found.")
 
@@ -397,9 +467,9 @@ def submit_code(request):
 
         try:
             docker_command = [
-                'docker', 'run', 
+                'docker', 'run', '--rm',
                 '-v', f'{temp_code_file_path}:/app/code.{language}',
-                '-v', os.path.join(settings.BASE_DIR, 'hidden_testcases') + ':/app/hidden_testcases:ro',
+                '-v', os.path.join(settings.MEDIA_ROOT, 'hidden_testcases') + ':/app/hidden_testcases:ro',
                 'vljudge',
                 'python3', '/app/judge.py', language,
                 f'/app/code.{language}',
@@ -442,7 +512,7 @@ def submit_code(request):
 
         final_status_pattern = re.compile(r'Final status: (.+)')
         final_status_match = final_status_pattern.search(output)
-        final_status = final_status_match.group(1) if final_status_match else "Unknown"
+        final_status = final_status_match.group(1) if final_status_match else "Compiler Error"
 
         user_outputs_pattern = re.compile(r'User Outputs:\n((?:.|\n)+)')
         user_outputs_match = user_outputs_pattern.search(output)

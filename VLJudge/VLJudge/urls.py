@@ -19,7 +19,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path
 from home import views
-from home.views import search_user, add_friend
+from home.views import search_user, add_friend, activate
 from home.views import get_home, get_problemsets, login_view, logout_view, get_contests, problem_detail, submit_code, user_submissions, submission_detail, register_view, all_submissions, profile_view
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -37,4 +37,7 @@ urlpatterns = [
     path('profile/', profile_view, name='profile'),
     path('search_user/', search_user, name='search_user'),
     path('add_friend/<int:user_id>/', add_friend, name='add_friend'),
+    path('activate/<uidb64>/<token>/', activate, name='activate'),
+    
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

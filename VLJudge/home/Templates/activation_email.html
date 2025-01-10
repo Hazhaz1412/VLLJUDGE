@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activate Your Account</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #d1d1d1;
+            background-color: #1e1e2f;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #252533, #1b1b2a);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid #34354a;
+        }
+
+        h2 {
+            color: #00d8ff;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        p {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #d1d1d1;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #00d8ff;
+            color: #1e1e2f;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            text-align: center;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn:hover {
+            background-color: #00b2cc;
+            transform: scale(1.05);
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #828499;
+            text-align: center;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        .highlight {
+            color: #00d8ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Welcome, {{ user.username }}!</h2>
+        <p>We are excited to have you onboard. Click the button below to activate your account:</p>
+        <p style="text-align: center;">
+            <a href="http://{{ domain }}{% url 'activate' uidb64=uid token=token %}" class="btn">Activate My Account</a>
+        </p>
+        <p>If you did not sign up for this account, please ignore this email.</p>
+        <div class="footer">
+            <p>This link will expire in <span class="highlight">15 minutes</span>.</p>
+            <p>Best regards,<br><span class="highlight">The VLJudge Team</span></p>
+        </div>
+    </div>
+</body>
+</html>

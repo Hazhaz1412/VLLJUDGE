@@ -289,6 +289,15 @@
     </div>
     
     <script>
+        /*function goToPage() {
+            const pageNumber = document.getElementById('page-number').value;
+            const maxPage = {{ submissions.paginator.num_pages }};
+            if (pageNumber >= 1 && pageNumber <= maxPage) {
+                window.location.href = `?page=${pageNumber}`;
+            } else {
+                alert(`Please enter a page number between 1 and ${maxPage}`);
+            }
+        }    */
         function sortProblems(criteria) {
             const problemList = document.getElementById('problem-list');
             const problems = Array.from(problemList.getElementsByClassName('problem'));
@@ -322,15 +331,7 @@
             problemList.innerHTML = '';
             problems.forEach(problem => problemList.appendChild(problem));
         }
-        function goToPage() {
-            const pageNumber = document.getElementById('page-number').value;
-            const maxPage = {{ submissions.paginator.num_pages }};
-            if (pageNumber >= 1 && pageNumber <= maxPage) {
-                window.location.href = `?page=${pageNumber}`;
-            } else {
-                alert(`Please enter a page number between 1 and ${maxPage}`);
-            }
-        }
+         
         function applyFilters() {
             const tag = document.getElementById('tags').value;
             const ratingMin = document.getElementById('rating-min').value;

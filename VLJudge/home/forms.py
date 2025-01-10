@@ -3,10 +3,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserChangeForm, PasswordChangeForm
 
 from .models import Profile
-
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=100)
     password = forms.CharField(widget=forms.PasswordInput)
+    resend_activation_email = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput)
+
+    def clean_resend_activation_email(self):
+        # Nếu người dùng chọn gửi lại email xác thực, bạn có thể xử lý việc này ở view
+        return self.cleaned_data.get('resend_activation_email')
 
 class RegisterForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={'placeholder': 'Password'}))
@@ -32,6 +36,14 @@ class RegisterForm(forms.ModelForm):
             raise forms.ValidationError("Passwords do not match")
 
         return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password'])
+        user.is_active = False  # Không kích hoạt tài khoản ngay lập tức
+        if commit:
+            user.save()
+        return user
     
 from .models import Profile
  

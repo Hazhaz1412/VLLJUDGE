@@ -365,9 +365,9 @@
                     testcaseContainer.innerHTML = '';
                      
                     data.testcases.forEach((testcase, index) => {
-                        const truncatedInput = testcase.input.length > 150 ? testcase.input.substring(0, 150) + '...' : testcase.input;
-                        const truncatedExpected = testcase.expected.length > 150? testcase.expected.substring(0, 150) + '...' : testcase.expected;
-                        const truncatedActual = testcase.actual.length > 150 ? testcase.actual.substring(0, 150) + '...' : testcase.actual;
+                        const truncatedInput = testcase.input.length > 100 ? testcase.input.substring(0, 100) + '...' : testcase.input;
+                        const truncatedExpected = testcase.expected.length > 100? testcase.expected.substring(0, 100) + '...' : testcase.expected;
+                        const truncatedActual = testcase.actual.length > 100 ? testcase.actual.substring(0, 100) + '...' : testcase.actual;
                         const testcaseDiv = document.createElement('div');
                         testcaseDiv.classList.add('testcase');
                         testcaseDiv.innerHTML = `
